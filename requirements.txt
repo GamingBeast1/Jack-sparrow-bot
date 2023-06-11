@@ -39,7 +39,8 @@ wheel
 ujson
 wget
 pytz
-
+pip freeze > requirements.txt
+   
 
 
 
