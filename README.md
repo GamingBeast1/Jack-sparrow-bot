@@ -46,7 +46,7 @@
 - [x] Custom Start message
 - [x] Custom Button Alter message
 - [x] advanced status (disk, cpu, ram, uptime..)
- 
+- [x] Language filter feature
 
 
 ### Required Variables
