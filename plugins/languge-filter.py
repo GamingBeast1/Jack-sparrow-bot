@@ -1,64 +1,76 @@
-import pyrogram
 
-bot = pyrogram.Client("my_bot")
-##### Language filtering and language-based commands will go here #####
 
-@bot.on_message(pyrogram.Filters.command("start"))
-def start(bot, message):
-    chat_id = message.chat.id
-    bot.send_message(
-        chat_id, 
-        "Hello, I'm your language filtering and command bot. Type a language code to filter by or use /help to view all the commands available.")
+```python
+import telegram
+from telegram.ext import Updater, CommandHandler, MessageHandler, Filters
 
-@bot.on_message(pyrogram.Filters.command("help"))
-def help(bot, message):
-    chat_id = message.chat.id
-    bot.send_message(
-        chat_id, 
-        "Available commands:nn" 
-        "/set_language [language_code] — filter by the specified languagen"
-        "/list_languages — list all possible languages for filteringn"
-        "/list_commands — list all available commandsn"
-        "/foo — example command")
+# Define the language keywords
+languages = {
+    'English': ['Eng', 'English'],
+    'Hindi': ['Hin', 'Hindi'],
+    'Punjabi': ['Pun', 'Pbi', 'Punjabi'],
+    'Tamil': ['Tam', 'tamil']
+}
 
-@bot.on_message(pyrogram.Filters.command("set_language"))
-def set_language(bot, message):
-    chat_id = message.from_user.id
-    language_code = message.text.split()[1]
-    bot.send_message(
-        chat_id, 
-        f"Language {language_code} has been set! Messages in this language will now be filtered.")
+# Define the file database
+files = [
+    {'name': 'file1', 'language': 'English', 'keywords': ['Eng']},
+    {'name': 'file2', 'language': 'Hindi', 'keywords': ['Hin']},
+    {'name': 'file3', 'language': 'Punjabi', 'keywords': ['Pun', 'Pbi']},
+    {'name': 'file4', 'language': 'Tamil', 'keywords': ['Tam']}
+]
 
-@bot.on_message(pyrogram.Filters.command("list_languages"))
-def list_languages(bot, message):
-    chat_id = message.chat.id
-    bot.send_message(
-        chat_id, 
-        "Available languages:nn" 
-        "en — Englishn"
-        "es — Spanishn"
-        "de — Germann"
-        "ru — Russiann"
-        "fr — Frenchn"
-        "it — Italiann"
-        "zh — Chinese")
+# Define the URL shortener API
+def shorten_url(url):
+    # Code to shorten the URL using an API
+    return short_url
 
-@bot.on_message(pyrogram.Filters.command("list_commands"))
-def list_commands(bot, message):
-    chat_id = message.chat.id
-    bot.send_message(
-        chat_id, 
-        "Available commands:nn" 
-        "/set_language [language_code] — filter by the specified languagen"
-        "/list_languages — list all possible languages for filteringn"
-        "/list_commands — list all available commandsn"
-        "/foo — example command")
+# Define the start command handler
+def start(update, context):
+    context.bot.send_message(chat_id=update.effective_chat.id, text="Welcome to the file search bot!")
 
-@bot.on_message(pyrogram.Filters.command("foo"))
-def foo(bot, message):
-    chat_id = message.chat.id
-    bot.send_message(
-        chat_id, 
-        "This is just an example command.")
-                            
-bot.run()
+# Define the language filter handler
+def language_filter(update, context):
+    # Create the language filter keyboard
+    keyboard = []
+    for language in languages:
+        keyboard.append([telegram.KeyboardButton(language)])
+    reply_markup = telegram.ReplyKeyboardMarkup(keyboard, one_time_keyboard=True)
+    # Send the language filter message
+    context.bot.send_message(chat_id=update.effective_chat.id, text="Please select a language:", reply_markup=reply_markup)
+
+# Define the message handler
+def message_handler(update, context):
+    # Check if the message is a file name
+    file_name = update.message.text
+    if any(file['name'] == file_name for file in files):
+        # Get the language filter selection
+        language = context.user_data.get('language')
+        # Filter the files by language
+        filtered_files = [file for file in files if file['language'] == language and any(keyword in file['keywords'] for keyword in languages[language])]
+        # Generate short URLs for the files
+        short_urls = [shorten_url(file['url']) for file in filtered_files]
+        # Send the file links to the user
+        for short_url in short_urls:
+            context.bot.send_message(chat_id=update.effective_chat.id, text=short_url)
+
+# Define the language selection handler
+def language_selection(update, context):
+    # Get the selected language
+    language = update.message.text
+    # Save the language selection to user data
+    context.user_data['language'] = language
+    # Send a confirmation message
+    context.bot.send_message(chat_id=update.effective_chat.id, text="Language filter set to {}.".format(language))
+
+# Create the bot and add the handlers
+updater = Updater(token='YOUR_TOKEN', use_context=True)
+dispatcher = updater.dispatcher
+dispatcher.add_handler(CommandHandler('start', start))
+dispatcher.add_handler(MessageHandler(Filters.regex('^Language$'), language_filter))
+dispatcher.add_handler(MessageHandler(Filters.text, message_handler))
+dispatcher.add_handler(MessageHandler(Filters.regex('|'.join(languages.keys())), language_selection))
+
+# Start the bot
+updater.start_polling()
+```
